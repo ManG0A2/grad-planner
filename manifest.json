@@ -1,0 +1,17 @@
+{
+  "name": "대학원 플래너",
+  "short_name": "플래너",
+  "description": "수업 시간표, 캘린더, 할 일, 연구 과제 관리",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f5f9",
+  "theme_color": "#4f6df5",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -2,8 +2,15 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>대학원 일정 관리</title>
+<meta name="theme-color" content="#4f6df5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="대학원 플래너">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
 <style>
 :root{
   --bg:#f4f5f9;--panel:#ffffff;--border:#e4e7ef;--text:#1f2433;--muted:#7b8299;
@@ -31,7 +38,10 @@ p{margin:0}
 .sidebar nav button:hover{background:#f0f2f8}
 .sidebar nav button.active{background:var(--primary);color:#fff}
 .sidebar nav button .ic{width:20px;text-align:center}
-.sidebar .foot{margin-top:auto;padding:10px 12px;font-size:11px;color:var(--muted)}
+.sidebar .foot{margin-top:auto;padding:10px 12px;font-size:12px;color:var(--muted)}
+#sync-badge{cursor:pointer;padding:6px 10px;border-radius:8px;display:inline-block}
+#sync-badge:hover{background:#f0f2f8}
+code{background:#eef0f6;padding:1px 5px;border-radius:4px;font-size:12px}
 main{flex:1;min-width:0;padding:28px 32px 60px;max-width:1320px}
 .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
 .page-head .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -125,7 +135,8 @@ main{flex:1;min-width:0;padding:28px 32px 60px;max-width:1320px}
 .cal-layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
 .cal-nav{display:flex;align-items:center;gap:6px}
 .cal-nav h1{min-width:130px;text-align:center}
-.cal{padding:0;overflow:hidden}
+.cal{padding:0;overflow-x:auto}
+.cal-week,.cal-grid{min-width:560px}
 .cal-week{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
 .cal-week div{text-align:center;padding:8px 0;font-size:12px;font-weight:700;color:var(--muted)}
 .cal-week div:nth-child(6){color:#3b7ddd}.cal-week div:nth-child(7){color:var(--danger)}
@@ -194,7 +205,7 @@ textarea.memo-area{width:100%;min-height:260px;resize:vertical}
 /* forms */
 form label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 5px}
 form label:first-child{margin-top:0}
-form input[type=text],form input[type=date],form input[type=time],form input[type=number],form input[type=url],form select,form textarea,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;outline:none;transition:.12s}
+form input[type=text],form input[type=password],form input[type=date],form input[type=time],form input[type=number],form input[type=url],form select,form textarea,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;outline:none;transition:.12s}
 form input:focus,form select:focus,form textarea:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
 form textarea{min-height:80px;resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -231,7 +242,7 @@ form textarea{min-height:80px;resize:vertical}
   .brand{padding:0 12px 0 4px;white-space:nowrap}
   .sidebar nav{flex-direction:row}
   .sidebar nav button{white-space:nowrap;padding:8px 10px}
-  .sidebar .foot{display:none}
+  .sidebar .foot{margin-left:auto;padding:0 4px;white-space:nowrap}
   main{padding:18px 14px 60px}
   .grid2,.cal-layout{grid-template-columns:1fr}
   .stats{grid-template-columns:repeat(2,1fr)}
@@ -252,7 +263,7 @@ form textarea{min-height:80px;resize:vertical}
       <button data-act="nav" data-view="projects"><span class="ic">🔬</span>연구 과제</button>
       <button data-act="nav" data-view="settings"><span class="ic">⚙️</span>설정</button>
     </nav>
-    <div class="foot">데이터는 이 브라우저에 저장됩니다.<br>설정에서 백업할 수 있어요.</div>
+    <div class="foot"><span id="sync-badge" data-act="nav" data-view="settings" title="동기화 상태 (클릭하면 설정)"></span></div>
   </aside>
   <main id="main"></main>
 </div>
@@ -328,8 +339,10 @@ function load() {
   return defaultState();
 }
 function save() {
+  state.updatedAt = nowIso();
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
   catch (e) { alert('저장 공간이 부족합니다. 첨부 파일을 줄이거나 데이터를 내보내 주세요.'); console.error(e); }
+  schedulePush();
 }
 function commit() { save(); render(); }
 
@@ -799,6 +812,7 @@ function renderSettings() {
       <div class="form-actions"><div class="right"><button type="submit" class="btn primary">저장</button></div></div>
     </form>
   </section>
+  ${renderSyncSection()}
   <section class="card"><h2>데이터 백업</h2>
     <p class="muted small" style="margin-bottom:10px">현재 사용량 ${fmtBytes(used)} · 수업 ${state.courses.length} · 과제 ${state.projects.length} · 일정 ${state.events.length} · 루틴 ${state.routines.length}</p>
     <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1269,9 +1283,162 @@ function loadSample() {
 }
 
 /* ============================================================
+   기기 간 동기화 (GitHub Gist)
+   - 비공개 Gist의 data.json 파일 하나에 전체 상태를 저장
+   - 저장 시 1.5초 후 자동 업로드, 앱을 열거나 화면 복귀 시 다운로드
+   - updatedAt이 더 최근인 쪽이 이김 (단, 아직 올리지 못한 로컬 변경이 있으면 로컬 우선)
+   ============================================================ */
+const SYNC_KEY = 'gradplanner.sync';
+const syncState = {cfg: loadSyncCfg(), status: 'off', msg: '', timer: null, pushing: false};
+function loadSyncCfg() { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || null; } catch (e) { return null; } }
+function saveSyncCfg(cfg) {
+  syncState.cfg = cfg;
+  if (cfg) localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); else localStorage.removeItem(SYNC_KEY);
+}
+function markDirty(flag) { if (syncState.cfg && syncState.cfg.dirty !== flag) { syncState.cfg.dirty = flag; saveSyncCfg(syncState.cfg); } }
+const SYNC_LABELS = {off: ['⚪', '동기화 안 함'], ok: ['🟢', '동기화됨'], saving: ['🟡', '올리는 중…'], pulling: ['🟡', '가져오는 중…'], error: ['🔴', '동기화 실패'], offline: ['⚪', '오프라인 · 저장 대기']};
+function setSyncStatus(status, msg = '') {
+  syncState.status = status; syncState.msg = msg;
+  renderSyncBadge();
+  const line = $('#sync-status-line'); if (line) line.innerHTML = syncStatusHTML();
+}
+function syncStatusHTML() {
+  const [ic, label] = SYNC_LABELS[syncState.status] || SYNC_LABELS.off;
+  return `${ic} ${label}${syncState.msg ? ` <span class="muted">· ${esc(syncState.msg)}</span>` : ''}`;
+}
+function renderSyncBadge() {
+  const el = $('#sync-badge'); if (!el) return;
+  const [ic, label] = SYNC_LABELS[syncState.status] || SYNC_LABELS.off;
+  el.textContent = `${ic} ${label}`;
+}
+function extractGistId(s) {
+  s = (s || '').trim();
+  const m = s.match(/[0-9a-f]{16,}/i);
+  return m ? m[0] : s.split('/').filter(Boolean).pop() || '';
+}
+async function gistRequest(method, cfg, body, keepalive = false) {
+  const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    method, cache: 'no-store', keepalive,
+    headers: {Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json', ...(body ? {'Content-Type': 'application/json'} : {})},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const hint = res.status === 401 ? '토큰이 올바르지 않습니다' : res.status === 404 ? 'Gist를 찾을 수 없습니다 (ID·토큰 권한 확인)' : res.status === 403 ? '권한이 없거나 요청 한도를 넘었습니다' : `HTTP ${res.status}`;
+    throw new Error(hint);
+  }
+  return res.json();
+}
+async function pullRemote(cfg) {
+  const g = await gistRequest('GET', cfg);
+  const f = g.files && g.files['data.json'];
+  if (!f) return null;
+  let content = f.content;
+  if (f.truncated) content = await (await fetch(f.raw_url, {cache: 'no-store'})).text();
+  if (!content || !content.trim()) return null;
+  try { const p = JSON.parse(content); return p && Array.isArray(p.events) ? p : null; } catch (e) { return null; }
+}
+async function pushRemote(cfg, data, keepalive = false) {
+  await gistRequest('PATCH', cfg, {files: {'data.json': {content: JSON.stringify(data)}}}, keepalive);
+}
+const hasData = s => !!(s && ((s.courses || []).length || (s.projects || []).length || (s.events || []).length || (s.routines || []).length));
+function applyRemote(remote) {
+  const s = defaultState();
+  state = {...s, ...remote, projects: remote.projects || [], routines: remote.routines || [], settings: {...s.settings, ...(remote.settings || {})}};
+  localStorage.setItem(KEY, JSON.stringify(state)); // save()를 거치지 않음 (updatedAt 유지, 재업로드 방지)
+  ui.editingNote = null;
+  render();
+}
+function schedulePush() {
+  if (!syncState.cfg) return;
+  markDirty(true);
+  clearTimeout(syncState.timer);
+  syncState.timer = setTimeout(() => pushNow(), 1500);
+}
+async function pushNow(keepalive = false) {
+  const cfg = syncState.cfg;
+  if (!cfg || !cfg.dirty || syncState.pushing) return;
+  if (!navigator.onLine) { setSyncStatus('offline'); return; }
+  syncState.pushing = true; setSyncStatus('saving');
+  const sentAt = state.updatedAt;
+  try {
+    await pushRemote(cfg, state, keepalive);
+    if (state.updatedAt === sentAt) { markDirty(false); setSyncStatus('ok'); }
+    else { syncState.pushing = false; return pushNow(); } // 올리는 동안 또 바뀜 → 한 번 더
+  } catch (e) {
+    setSyncStatus('error', e.message);
+  } finally { syncState.pushing = false; }
+}
+async function pullAndMerge() {
+  const cfg = syncState.cfg;
+  if (!cfg || !navigator.onLine || syncState.pushing) return;
+  if (cfg.dirty) return pushNow(); // 아직 못 올린 로컬 변경이 우선
+  setSyncStatus('pulling');
+  try {
+    const remote = await pullRemote(cfg);
+    const r = (remote && remote.updatedAt) || '', l = state.updatedAt || '';
+    if (remote && r > l) { applyRemote(remote); toast('다른 기기의 변경 사항을 가져왔습니다.'); }
+    else if (hasData(state) && (!remote || r < l)) { markDirty(true); return pushNow(); }
+    setSyncStatus('ok');
+  } catch (e) { setSyncStatus('error', e.message); }
+}
+function renderSyncSection() {
+  const cfg = syncState.cfg;
+  if (cfg) return `<section class="card"><h2>📱 기기 간 동기화 (GitHub Gist)</h2>
+    <p class="small" style="margin-bottom:6px">연결됨 · Gist <a href="https://gist.github.com/${esc(cfg.gistId)}" target="_blank" rel="noopener"><code>${esc(cfg.gistId)}</code></a> · 토큰 <code>${esc(cfg.token.slice(0, 7))}…</code></p>
+    <p class="small" id="sync-status-line" style="margin-bottom:10px">${syncStatusHTML()}</p>
+    <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" data-act="syncNow">🔄 지금 동기화</button>
+      <button class="btn danger" data-act="syncDisconnect">연결 해제</button>
+    </div>
+    <p class="hint">저장할 때마다 자동으로 Gist에 올리고, 앱을 열거나 화면으로 돌아올 때 다른 기기의 변경 사항을 가져옵니다. 더 최근에 저장한 쪽이 우선합니다.</p>
+  </section>`;
+  return `<section class="card"><h2>📱 기기 간 동기화 (GitHub Gist)</h2>
+    <p class="muted small" style="margin-bottom:8px">비공개 Gist 하나를 저장소로 씁니다. 폰과 PC에서 각각 한 번씩만 입력하면 이후로는 자동입니다.</p>
+    <form data-form="sync">
+      <label>Gist 주소 또는 ID</label><input type="text" name="gistId" required placeholder="https://gist.github.com/아이디/abc123… 또는 abc123…" autocomplete="off">
+      <label>GitHub 토큰 (classic · gist 권한)</label><input type="password" name="token" required placeholder="ghp_…" autocomplete="off">
+      <div class="form-actions"><div class="right"><button type="submit" class="btn primary">연결</button></div></div>
+    </form>
+    <p class="hint">토큰은 이 브라우저에만 저장되며 GitHub 외의 어디로도 전송되지 않습니다. 공용 PC에서는 연결하지 마세요.</p>
+  </section>`;
+}
+forms.sync = async form => {
+  const fd = new FormData(form);
+  const gistId = extractGistId(fd.get('gistId')), token = fd.get('token').trim();
+  if (!gistId || !token) return alert('Gist ID와 토큰을 모두 입력해 주세요.');
+  const btn = form.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '확인 중…';
+  const cfg = {gistId, token, dirty: false};
+  try {
+    const remote = await pullRemote(cfg);
+    saveSyncCfg(cfg);
+    if (hasData(remote) && (!hasData(state) || confirm('Gist에 이미 저장된 데이터가 있습니다.\n\n[확인] Gist 데이터를 이 기기로 가져오기\n[취소] 이 기기의 데이터로 Gist를 덮어쓰기'))) {
+      applyRemote(remote); setSyncStatus('ok'); toast('Gist 데이터를 가져왔습니다.'); return;
+    }
+    markDirty(true); await pushNow();
+    render(); toast('연결되었습니다. 현재 데이터를 Gist에 올렸습니다.');
+  } catch (e) {
+    saveSyncCfg(null); setSyncStatus('off');
+    alert('연결 실패: ' + e.message); btn.disabled = false; btn.textContent = '연결';
+  }
+};
+actions.syncNow = async () => { if (syncState.cfg.dirty) await pushNow(); else await pullAndMerge(); toast(syncState.status === 'ok' ? '동기화 완료' : '동기화 실패: ' + syncState.msg); };
+actions.syncDisconnect = () => {
+  if (!confirm('동기화 연결을 해제할까요?\nGist의 데이터와 이 기기의 데이터는 그대로 남습니다.')) return;
+  saveSyncCfg(null); setSyncStatus('off'); render(); toast('연결을 해제했습니다.');
+};
+window.addEventListener('online', () => pullAndMerge());
+window.addEventListener('offline', () => syncState.cfg && setSyncStatus('offline'));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullAndMerge(); });
+window.addEventListener('pagehide', () => { if (syncState.cfg && syncState.cfg.dirty) { clearTimeout(syncState.timer); pushNow(true); } });
+
+/* ============================================================
    시작
    ============================================================ */
 render();
+if (syncState.cfg) { setSyncStatus(navigator.onLine ? 'pulling' : 'offline'); pullAndMerge(); } else renderSyncBadge();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW 등록 실패', e));
+}
 </script>
 </body>
 </html>
