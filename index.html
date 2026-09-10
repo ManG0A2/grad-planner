@@ -11,6 +11,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
 <style>
 :root{
   --bg:#f4f5f9;--panel:#ffffff;--border:#e4e7ef;--text:#1f2433;--muted:#7b8299;
@@ -185,14 +187,59 @@ select.inline{padding:6px 10px;border:1px solid var(--border);border-radius:8px;
 .tabs button{border:0;background:none;padding:9px 14px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 .tabs button.active{color:var(--primary);border-bottom-color:var(--primary)}
 .tabs button .n{font-size:11px;background:#eef0f6;padding:0 6px;border-radius:99px;margin-left:4px;color:var(--muted)}
-.note{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;background:#fff}
-.note.pinned{border-color:#ffd43b;background:#fffbea}
-.note .body{flex:1;white-space:pre-wrap;word-break:break-word;min-width:0}
-.note .tools{display:flex;gap:2px;flex:none;opacity:.5}
-.note:hover .tools{opacity:1}
-.note textarea{width:100%}
-.note-add{display:flex;gap:8px;align-items:flex-start;margin-bottom:14px}
-.note-add textarea{flex:1;min-height:60px}
+/* ---- 포스트잇 벽 ---- */
+.wall{margin:-16px -18px -16px;padding:18px 20px 26px;border-radius:var(--radius);min-height:360px;
+  background-color:#e9dcc3;
+  background-image:radial-gradient(rgba(120,90,50,.13) 1px,transparent 1.5px),radial-gradient(rgba(255,255,255,.35) 1px,transparent 1.5px);
+  background-size:14px 14px,22px 22px;background-position:0 0,7px 9px;
+  box-shadow:inset 0 0 0 8px #c9a877,inset 0 0 0 9px rgba(0,0,0,.08)}
+.wall{position:relative}
+/* 우측 하단 포스트잇 뭉치 */
+.pad{position:absolute;right:22px;bottom:20px;width:82px;height:82px;cursor:pointer;z-index:5;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.pad .sheet{position:absolute;inset:0;border-radius:2px;transition:transform .15s}
+.pad .sheet.s5{transform:translate(7px,8px) rotate(4deg);background:#f5e27a}
+.pad .sheet.s4{transform:translate(5px,6px) rotate(-3deg);background:#f9e98a}
+.pad .sheet.s3{transform:translate(4px,4px) rotate(2deg);background:#fdef94}
+.pad .sheet.s2{transform:translate(2px,2px) rotate(-1deg);background:#fff59d}
+.pad .sheet.s1{background:linear-gradient(180deg,#fffbc4 0,#fff59d 100%);box-shadow:0 1px 0 rgba(255,255,255,.7) inset}
+.pad .sheet.s1::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:rgba(120,95,20,.55);opacity:0;transition:.15s}
+.pad:hover .sheet.s1{transform:translate(-5px,-8px) rotate(-6deg)}
+.pad:hover .sheet.s1::after{opacity:1}
+.pad:active .sheet.s1{transform:translate(-10px,-16px) rotate(-10deg)}
+.board{position:relative;min-height:420px}
+.wall-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7c6a4b;font-size:14px;text-align:center;padding:20px;pointer-events:none}
+.postit{position:absolute;left:12px;top:12px;width:180px;height:170px;padding:20px 14px 14px;background:var(--pc);color:#3b3222;
+  transform:rotate(var(--rot));box-shadow:2px 4px 10px rgba(0,0,0,.18),0 1px 0 rgba(255,255,255,.5) inset;
+  cursor:grab;transition:transform .15s,box-shadow .15s,left .22s ease-out,top .22s ease-out;border-radius:2px 2px 4px 2px;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
+.postit.dragging{cursor:grabbing;transform:rotate(0deg) scale(1.06);box-shadow:8px 16px 28px rgba(0,0,0,.3);transition:none;z-index:50!important}
+.postit.pinned{cursor:pointer}
+.postit.slot-ghost{position:absolute;border:2px dashed rgba(120,95,20,.35);border-radius:4px;background:rgba(255,255,255,.18);pointer-events:none;z-index:1}
+.postit::before{content:"";position:absolute;top:0;left:50%;width:56px;height:14px;transform:translateX(-50%) rotate(-1deg);
+  background:rgba(255,255,255,.55);box-shadow:0 1px 2px rgba(0,0,0,.08);border-radius:1px}
+.postit:hover{transform:rotate(0deg) scale(1.04);box-shadow:4px 8px 18px rgba(0,0,0,.24);z-index:40!important}
+.postit.pinned{--rot:0deg}
+.postit.pinned::before{display:none}
+.postit .pin{position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-20deg);font-size:20px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.postit .ptext{font-family:"Nanum Pen Script","Gaegu",cursive,sans-serif;font-size:21px;line-height:1.25;white-space:pre-wrap;word-break:break-word;max-height:130px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(180deg,#000 80%,transparent);mask-image:linear-gradient(180deg,#000 80%,transparent)}
+.postit .postit-hover{position:absolute;top:4px;right:4px;display:flex;gap:2px;opacity:0;transition:.15s}
+.postit:hover .postit-hover{opacity:1}
+.postit .postit-hover button{border:0;background:rgba(255,255,255,.55);border-radius:6px;cursor:pointer;padding:2px 5px;font-size:13px}
+.postit .postit-hover button:hover{background:#fff}
+.postit.editing{cursor:default;transform:rotate(0deg) scale(1.06);z-index:60!important;width:220px;height:auto;min-height:170px;overflow:visible;transition:none;box-shadow:6px 12px 24px rgba(0,0,0,.28);touch-action:auto;user-select:text;-webkit-user-select:text}
+.postit.editing.draft{animation:tear .5s cubic-bezier(.2,.9,.3,1.15)}
+.postit.editing textarea{width:100%;min-height:120px;border:0;background:transparent;resize:vertical;outline:none;padding:0;box-shadow:none;
+  font-family:"Nanum Pen Script","Gaegu",cursive,sans-serif;font-size:21px;line-height:1.25;color:#3b3222}
+.postit.editing textarea::placeholder{color:rgba(60,50,30,.4)}
+.postit-tools{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.postit-tools .dots{display:flex;gap:5px;flex:1}
+.postit-tools .dot-btn{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.7);cursor:pointer;padding:0;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.postit-tools .dot-btn.on{border-color:#3b3222;transform:scale(1.15)}
+.postit-tools .btn{padding:4px 9px;font-size:12px;border-radius:6px}
+.postit.stuck{animation:stick .35s ease-out}
+@keyframes tear{0%{transform:translate(var(--tx,320px),var(--ty,300px)) rotate(16deg) scale(.45);opacity:.4}65%{transform:translate(-6px,-8px) rotate(-3deg) scale(1.1);opacity:1}100%{transform:rotate(0deg) scale(1.06)}}
+@keyframes stick{0%{transform:rotate(var(--rot)) scale(1.15);box-shadow:8px 14px 26px rgba(0,0,0,.3)}100%{transform:rotate(var(--rot)) scale(1)}}
+@media (max-width:900px){.postit{width:134px;height:130px;padding:16px 10px 10px}.postit .ptext{font-size:18px;max-height:100px}.postit.editing{width:200px;min-height:130px}.pad{width:68px;height:68px;right:16px;bottom:14px}}
 .att{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid var(--border)}
 .att:last-child{border-bottom:0}
 .att .ic{font-size:18px;width:26px;text-align:center}
@@ -353,7 +400,7 @@ const ui = {
   detail: null,          // {type:'course'|'project', id, tab}
   todoFilter: 'all',
   showDoneProjects: false,
-  editingNote: null,
+  editingNote: null, editText: null, draft: null, justStuck: false,
 };
 
 /* ------- 조회 헬퍼 ------- */
@@ -588,6 +635,146 @@ function renderCalendar() {
 /* ============================================================
    화면: 할 일
    ============================================================ */
+/* ------- 포스트잇 ------- */
+const POSTIT_COLORS = {yellow: '#fff59d', pink: '#f8bbd0', blue: '#bbdefb', green: '#c8e6c9', orange: '#ffe0b2', purple: '#e1bee7'};
+const postitColor = key => POSTIT_COLORS[key] || POSTIT_COLORS.yellow;
+const randomRot = () => +((Math.random() * 6) - 3).toFixed(2);
+function noteRot(n) {
+  if (typeof n.rot === 'number') return n.rot;
+  let h = 0; for (const ch of n.id) h = (h * 31 + ch.charCodeAt(0)) % 1000; // 예전 메모: id로 고정된 기울기
+  return ((h % 61) / 10) - 3;
+}
+function nextPostitColor() {
+  const item = ui.detail && findItem(ui.detail.type, ui.detail.id);
+  const last = item && item.notes[0] && item.notes[0].color;
+  const keys = Object.keys(POSTIT_COLORS);
+  return last ? keys[(keys.indexOf(last) + 1) % keys.length] : 'yellow';
+}
+/* 벽 배치: 아이폰 홈 화면처럼 정해진 칸(slot)에 붙음. 칸 수는 벽 너비에 따라 달라지고 순서(slot 번호)는 유지 */
+const GRID = {pad: 12, gap: 18};
+function gridInfo(board) {
+  const probe = $('.postit:not(.editing):not(.slot-ghost)', board);
+  const mobile = window.matchMedia('(max-width:900px)').matches;
+  const cw = probe ? probe.offsetWidth : (mobile ? 134 : 180), ch = probe ? probe.offsetHeight : (mobile ? 130 : 170);
+  const cols = Math.max(1, Math.floor((board.clientWidth - GRID.pad * 2 + GRID.gap) / (cw + GRID.gap)));
+  return {cw, ch, cols};
+}
+const slotPos = (g, slot) => ({x: GRID.pad + (slot % g.cols) * (g.cw + GRID.gap), y: GRID.pad + Math.floor(slot / g.cols) * (g.ch + GRID.gap)});
+function nearestSlot(g, x, y) { // 요소 좌상단 좌표 → 가장 가까운 칸
+  const col = Math.min(g.cols - 1, Math.max(0, Math.round((x - GRID.pad) / (g.cw + GRID.gap))));
+  const row = Math.max(0, Math.round((y - GRID.pad) / (g.ch + GRID.gap)));
+  return row * g.cols + col;
+}
+function assignSlots(item) { // slot이 없는 메모(옛 형식·새 메모)에 빈 칸 배정
+  const used = new Set(item.notes.filter(n => Number.isInteger(n.slot)).map(n => n.slot));
+  let changed = false;
+  const pending = item.notes.filter(n => !Number.isInteger(n.slot))
+    .sort((a, b) => ((a.y || 0) - (b.y || 0)) || ((a.x || 0) - (b.x || 0))); // 예전 자유 배치는 위→아래, 왼→오른 순서로
+  for (const n of pending) { let s = 0; while (used.has(s)) s++; n.slot = s; used.add(s); changed = true; }
+  return changed;
+}
+function fitBoard(board, g) {
+  const item = findItem(ui.detail.type, ui.detail.id);
+  const maxSlot = Math.max(-1, ...item.notes.map(n => n.slot));
+  const rows = Math.max(2, Math.floor(maxSlot / g.cols) + 1);
+  board.style.height = (GRID.pad + rows * (g.ch + GRID.gap) + 100) + 'px'; // 아래쪽에 뭉치 자리
+}
+function layoutBoard() {
+  const board = $('.board'); if (!board || !ui.detail) return;
+  const item = findItem(ui.detail.type, ui.detail.id); if (!item) return;
+  const changed = assignSlots(item);
+  const g = gridInfo(board), W = board.clientWidth;
+  $$('.postit', board).forEach(el => {
+    if (el.dataset.id === 'draft') {
+      el.style.left = Math.max(8, (W - el.offsetWidth) / 2) + 'px'; el.style.top = '16px';
+      const pad = $('.pad'); // 뭉치 위치에서 뜯겨 나오는 애니메이션 시작점
+      if (pad) { const pr = pad.getBoundingClientRect(), er = el.getBoundingClientRect(); el.style.setProperty('--tx', (pr.left - er.left) + 'px'); el.style.setProperty('--ty', (pr.top - er.top) + 'px'); }
+      return;
+    }
+    const n = item.notes.find(x => x.id === el.dataset.id); if (!n) return;
+    const p = slotPos(g, n.slot);
+    el.style.left = Math.min(p.x, Math.max(0, W - el.offsetWidth)) + 'px'; el.style.top = p.y + 'px';
+  });
+  fitBoard(board, g);
+  if (changed) save();
+}
+/* 쓰던 포스트잇을 두고 다른 곳을 누르면 자동으로 붙임 (비어 있으면 버림) */
+function autoCommitEditor() {
+  if (ui.draft) { const ta = $('#note-edit-draft'); if (ta && ta.value.trim()) actions.addNote(); else actions.discardDraft(); return true; }
+  if (ui.editingNote) { const ta = $(`#note-edit-${ui.editingNote}`); if (ta && ta.value.trim()) actions.saveNote({dataset: {id: ui.editingNote}}); else actions.cancelNote(); return true; }
+  return false;
+}
+/* 드래그로 칸 옮기기 (마우스·터치 공통). 고정된 메모는 움직이지 않음 */
+let drag = null;
+document.addEventListener('pointerdown', ev => {
+  ui.dragJustEnded = false;
+  if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+  let rerendered = false;
+  if ($('.postit.editing') && !ev.target.closest('.postit.editing') && !ev.target.closest('.overlay')) { rerendered = autoCommitEditor(); }
+  if (rerendered && !ev.target.isConnected) { // 자동 저장으로 화면이 다시 그려져 click이 오지 않으므로 직접 실행
+    const act = ev.target.closest('[data-act]');
+    if (act && !act.classList.contains('postit')) { const fn = actions[act.dataset.act]; if (fn) fn(act, ev); return; }
+  }
+  let el = ev.target.closest('.postit');
+  if (!el) return;
+  if (rerendered && !el.isConnected) el = $(`.postit[data-id="${el.dataset.id}"]`);
+  if (!el || el.classList.contains('editing') || ev.target.closest('button')) return;
+  const r = el.getBoundingClientRect();
+  drag = {el, id: el.dataset.id, startX: ev.clientX, startY: ev.clientY, offX: ev.clientX - r.left, offY: ev.clientY - r.top, moved: false, rerendered, pinned: el.classList.contains('pinned')};
+  try { el.setPointerCapture(ev.pointerId); } catch (e) {}
+});
+document.addEventListener('pointermove', ev => {
+  if (!drag || drag.pinned) return;
+  if (!drag.moved) { if (Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 5) return; drag.moved = true; drag.el.classList.add('dragging'); }
+  const board = drag.el.parentElement, br = board.getBoundingClientRect(), g = gridInfo(board);
+  const x = Math.min(Math.max(0, ev.clientX - br.left - drag.offX), Math.max(0, board.clientWidth - drag.el.offsetWidth));
+  const y = Math.max(0, ev.clientY - br.top - drag.offY);
+  drag.el.style.left = x + 'px'; drag.el.style.top = y + 'px';
+  // 놓일 칸 미리 보여주기
+  let ghost = $('.slot-ghost', board); if (!ghost) { ghost = document.createElement('div'); ghost.className = 'postit slot-ghost'; board.appendChild(ghost); }
+  const p = slotPos(g, nearestSlot(g, x, y)); ghost.style.left = p.x + 'px'; ghost.style.top = p.y + 'px'; ghost.style.width = g.cw + 'px'; ghost.style.height = g.ch + 'px';
+  ev.preventDefault();
+});
+function endDrag() {
+  if (!drag) return;
+  const d = drag; drag = null; d.el.classList.remove('dragging');
+  const ghost = $('.slot-ghost'); ghost && ghost.remove();
+  if (!d.moved) { if (d.rerendered) actions.editNote({dataset: {id: d.id}}); return; } // 다시 그려진 뒤엔 click이 안 오므로 직접 편집 열기
+  ui.dragJustEnded = true; setTimeout(() => { ui.dragJustEnded = false; }, 0);
+  const item = ui.detail && findItem(ui.detail.type, ui.detail.id); const n = item && item.notes.find(x => x.id === d.id); if (!n) return;
+  const board = d.el.parentElement, g = gridInfo(board);
+  const target = nearestSlot(g, parseFloat(d.el.style.left), parseFloat(d.el.style.top));
+  const other = item.notes.find(x => x !== n && x.slot === target);
+  if (other && other.pinned) { toast('고정된 메모 자리입니다.'); layoutBoard(); return; } // 고정 자리는 못 뺏음 → 제자리로
+  if (other) other.slot = n.slot; // 자리 맞바꾸기
+  n.slot = target;
+  layoutBoard(); save();
+}
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+function postitEditor(id, text, color) {
+  return `<div class="postit editing ${id === 'draft' ? 'draft' : ''}" style="--pc:${postitColor(color)};--rot:0deg" data-id="${id}">
+    <textarea id="note-edit-${id}" placeholder="여기에 적기… (Ctrl+Enter로 붙이기)">${esc(text || '')}</textarea>
+    <div class="postit-tools">
+      <div class="dots">${Object.entries(POSTIT_COLORS).map(([k, v]) => `<button type="button" class="dot-btn ${k === color ? 'on' : ''}" style="background:${v}" data-act="setNoteColor" data-id="${id}" data-color="${k}" title="${k}"></button>`).join('')}</div>
+      ${id === 'draft'
+        ? `<button class="btn ghost" data-act="discardDraft">버리기</button><button class="btn primary" data-act="addNote">벽에 붙이기</button>`
+        : `<button class="btn ghost" data-act="cancelNote">취소</button><button class="btn primary" data-act="saveNote" data-id="${id}">붙이기</button>`}
+    </div>
+  </div>`;
+}
+function postitHTML(n) {
+  if (ui.editingNote === n.id) return postitEditor(n.id, ui.editText != null ? ui.editText : n.text, n.color || 'yellow');
+  const stuck = ui.justStuck && n === findItem(ui.detail.type, ui.detail.id).notes[0];
+  return `<div class="postit ${n.pinned ? 'pinned' : ''} ${stuck ? 'stuck' : ''}" style="--pc:${postitColor(n.color)};--rot:${noteRot(n)}deg" data-act="editNote" data-id="${n.id}" title="${n.pinned ? '고정됨 · 눌러서 고치기' : '끌어서 옮기기 · 눌러서 고치기'}">
+    ${n.pinned ? '<span class="pin">📌</span>' : ''}
+    <div class="ptext">${esc(n.text)}</div>
+    <div class="postit-hover">
+      <button data-act="pinNote" data-id="${n.id}" title="${n.pinned ? '고정 해제' : '핀으로 고정'}">📌</button>
+      <button data-act="deleteNote" data-id="${n.id}" title="뜯어내기">🗑️</button>
+    </div>
+  </div>`;
+}
 function routineRows(list) {
   if (!list.length) return '<div class="empty">등록된 루틴이 없습니다.</div>';
   return list.map(r => {
@@ -678,7 +865,7 @@ function renderCourses() {
           ${c.room ? `<span>📍 ${esc(c.room)}</span>` : ''}
           <span>🕒 ${c.slots.length ? c.slots.map(s => `${DAYS[s.day]} ${s.start}–${s.end}`).join(', ') : '시간 미정'}</span>
         </div>
-        <div class="foot"><span>남은 일정 <b>${n.open}</b></span><span>기억할 내용 <b>${(c.notes || []).length}</b></span><span>첨부 <b>${(c.attachments || []).length}</b></span></div>
+        <div class="foot"><span>남은 일정 <b>${n.open}</b></span><span>메모 <b>${(c.notes || []).length}</b></span><span>첨부 <b>${(c.attachments || []).length}</b></span></div>
       </div>`;
     }).join('') : '<div class="card empty">등록된 수업이 없습니다.</div>'}
   </div>`;
@@ -706,7 +893,7 @@ function renderProjects() {
           ${p.deadline ? `<span>⏰ 마감 ${fmtDate(p.deadline)} <b class="dday ${dd.cls}" style="min-width:0">${dd.text}</b></span>` : ''}
         </div>
         <div class="progress" title="일정 완료율 ${pct}%"><i style="width:${pct}%"></i></div>
-        <div class="foot"><span>일정 <b>${n.done}/${n.total}</b></span><span>기억할 내용 <b>${(p.notes || []).length}</b></span><span>첨부 <b>${(p.attachments || []).length}</b></span></div>
+        <div class="foot"><span>일정 <b>${n.done}/${n.total}</b></span><span>메모 <b>${(p.notes || []).length}</b></span><span>첨부 <b>${(p.attachments || []).length}</b></span></div>
       </div>`;
     }).join('') : '<div class="card empty">표시할 연구 과제가 없습니다.</div>'}
   </div>`;
@@ -731,8 +918,8 @@ function renderDetail() {
        item.deadline && `⏰ 마감 ${fmtDate(item.deadline, true)} <b class="dday ${ddayInfo(item.deadline, item.status === '완료').cls}" style="min-width:0">${ddayInfo(item.deadline, item.status === '완료').text}</b>`];
 
   const tabs = [
-    ['events', '일정', open.length], ['notes', '기억할 내용', item.notes.length],
-    ['files', '첨부', item.attachments.length], ['memo', '메모', null],
+    ['events', '일정', open.length], ['notes', '메모 벽', item.notes.length],
+    ['files', '첨부', item.attachments.length], ['memo', '노트', null],
   ];
   let body = '';
   if (tab === 'events') {
@@ -744,16 +931,16 @@ function renderDetail() {
       ${routines.length ? `<div class="group-title">🔁 반복 루틴 · ${routines.length}</div>${routineRows(routines)}` : ''}`;
   } else if (tab === 'notes') {
     const notes = [...item.notes].sort((a, b) => (b.pinned - a.pinned) || (b.createdAt || '').localeCompare(a.createdAt || ''));
-    body = `<div class="note-add"><textarea id="new-note" placeholder="기억해야 할 내용을 적고 추가 (Ctrl+Enter)"></textarea><button class="btn primary" data-act="addNote">추가</button></div>
-      ${notes.length ? notes.map(n => ui.editingNote === n.id
-        ? `<div class="note"><textarea id="note-edit-${n.id}">${esc(n.text)}</textarea><div class="tools" style="flex-direction:column"><button class="btn sm primary" data-act="saveNote" data-id="${n.id}">저장</button><button class="btn sm" data-act="cancelNote">취소</button></div></div>`
-        : `<div class="note ${n.pinned ? 'pinned' : ''}"><div class="body">${esc(n.text)}</div>
-            <div class="tools">
-              <button class="icon-btn" data-act="pinNote" data-id="${n.id}" title="${n.pinned ? '고정 해제' : '상단 고정'}">${n.pinned ? '📌' : '📍'}</button>
-              <button class="icon-btn" data-act="editNote" data-id="${n.id}" title="수정">✏️</button>
-              <button class="icon-btn" data-act="deleteNote" data-id="${n.id}" title="삭제">🗑️</button>
-            </div></div>`).join('')
-        : '<div class="empty">아직 기록한 내용이 없습니다.</div>'}`;
+    body = `<div class="wall">
+      <div class="board">
+        ${ui.draft ? postitEditor('draft', ui.draft.text, ui.draft.color) : ''}
+        ${notes.map(n => postitHTML(n)).join('')}
+        ${!notes.length && !ui.draft ? '<div class="wall-empty">오른쪽 아래 포스트잇 뭉치에서 한 장 뜯어 보세요.<br>붙인 메모는 끌어서 칸을 옮기고, 눌러서 고칠 수 있어요.</div>' : ''}
+      </div>
+      <div class="pad" data-act="tearNote" title="새 포스트잇">
+        <div class="sheet s5"></div><div class="sheet s4"></div><div class="sheet s3"></div><div class="sheet s2"></div><div class="sheet s1"></div>
+      </div>
+    </div>`;
   } else if (tab === 'files') {
     body = `<div class="page-head" style="margin-bottom:6px"><p class="muted small">링크(URL, 논문, 드라이브 경로)나 작은 파일(${MAX_FILE_MB}MB 이하)을 첨부할 수 있습니다.</p>
       <div class="actions"><button class="btn sm" data-act="addLink">🔗 링크 추가</button><button class="btn sm" data-act="attachFile">📎 파일 첨부</button></div></div>
@@ -830,6 +1017,8 @@ const VIEWS = {home: renderHome, timetable: renderTimetable, calendar: renderCal
 function render() {
   $$('.sidebar nav button').forEach(b => b.classList.toggle('active', b.dataset.view === ui.view));
   $('#main').innerHTML = ui.detail ? renderDetail() : VIEWS[ui.view]();
+  ui.justStuck = false;
+  layoutBoard();
 }
 
 /* ============================================================
@@ -1027,7 +1216,7 @@ const forms = {
    액션
    ============================================================ */
 function openDetail(type, id, tab = 'events') {
-  ui.detail = {type, id, tab}; ui.editingNote = null;
+  ui.detail = {type, id, tab}; ui.editingNote = null; ui.draft = null;
   ui.view = type === 'course' ? 'courses' : 'projects';
   render();
 }
@@ -1137,26 +1326,48 @@ const actions = {
   // 상세
   openDetail(el, ev) { ev.stopPropagation(); openDetail(el.dataset.type, el.dataset.id); },
   backToList(el) { ui.detail = null; ui.view = el.dataset.type === 'course' ? 'courses' : 'projects'; render(); },
-  detailTab(el) { ui.detail.tab = el.dataset.tab; ui.editingNote = null; render(); },
+  detailTab(el) { ui.detail.tab = el.dataset.tab; ui.editingNote = null; ui.draft = null; render(); },
 
-  // 기억할 내용
-  addNote() {
-    const ta = $('#new-note'); const text = ta.value.trim(); if (!text) return ta.focus();
-    findItem(ui.detail.type, ui.detail.id).notes.unshift({id: uid(), text, pinned: false, createdAt: nowIso()});
-    commit(); $('#new-note') && $('#new-note').focus();
+  // 메모 벽 (포스트잇)
+  tearNote() {
+    if (ui.draft) { const ta = $('#note-edit-draft'); ta && ta.focus(); return; }
+    ui.draft = {text: '', color: nextPostitColor()}; ui.editingNote = null; render();
+    const ta = $('#note-edit-draft'); ta && ta.focus();
   },
-  editNote(el) { ui.editingNote = el.dataset.id; render(); const ta = $(`#note-edit-${el.dataset.id}`); ta && ta.focus(); },
-  cancelNote() { ui.editingNote = null; render(); },
+  addNote() {
+    const ta = $('#note-edit-draft'); if (!ta) return;
+    const text = ta.value.trim(); if (!text) return ta.focus();
+    findItem(ui.detail.type, ui.detail.id).notes.unshift({id: uid(), text, pinned: false, color: ui.draft.color, rot: randomRot(), createdAt: nowIso()});
+    ui.draft = null; ui.justStuck = true; commit(); toast('벽에 붙였습니다.');
+  },
+  discardDraft() { ui.draft = null; render(); },
+  editNote(el) {
+    if (ui.dragJustEnded || ui.editingNote === el.dataset.id) return;
+    ui.editingNote = el.dataset.id; ui.editText = null; render();
+    const ta = $(`#note-edit-${el.dataset.id}`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  },
+  cancelNote() { ui.editingNote = null; ui.editText = null; render(); },
   saveNote(el) {
     const item = findItem(ui.detail.type, ui.detail.id);
-    const n = item.notes.find(x => x.id === el.dataset.id);
+    const n = item.notes.find(x => x.id === el.dataset.id); if (!n) return;
     const text = $(`#note-edit-${n.id}`).value.trim();
-    if (text) n.text = text; ui.editingNote = null; commit();
+    if (text) n.text = text; ui.editingNote = null; ui.editText = null; commit();
   },
-  pinNote(el) { const item = findItem(ui.detail.type, ui.detail.id); const n = item.notes.find(x => x.id === el.dataset.id); n.pinned = !n.pinned; commit(); },
-  deleteNote(el) {
-    if (!confirm('이 내용을 삭제할까요?')) return;
-    const item = findItem(ui.detail.type, ui.detail.id); item.notes = item.notes.filter(x => x.id !== el.dataset.id); commit();
+  setNoteColor(el, ev) {
+    ev.stopPropagation();
+    const {id, color} = el.dataset;
+    const ta = $(`#note-edit-${id}`); const text = ta ? ta.value : '';
+    if (id === 'draft') { ui.draft.color = color; ui.draft.text = text; }
+    else { const n = findItem(ui.detail.type, ui.detail.id).notes.find(x => x.id === id); n.color = color; ui.editText = text; }
+    render(); const ta2 = $(`#note-edit-${id}`); if (ta2) { ta2.focus(); ta2.setSelectionRange(ta2.value.length, ta2.value.length); }
+  },
+  pinNote(el, ev) { ev.stopPropagation(); const item = findItem(ui.detail.type, ui.detail.id); const n = item.notes.find(x => x.id === el.dataset.id); n.pinned = !n.pinned; commit(); },
+  deleteNote(el, ev) {
+    ev.stopPropagation();
+    if (!confirm('이 메모를 벽에서 뜯어낼까요?')) return;
+    const item = findItem(ui.detail.type, ui.detail.id); item.notes = item.notes.filter(x => x.id !== el.dataset.id);
+    if (ui.editingNote === el.dataset.id) ui.editingNote = null;
+    commit();
   },
 
   // 첨부
@@ -1235,7 +1446,7 @@ document.addEventListener('input', ev => {
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape') closeModal();
   if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
-    if (ev.target.id === 'new-note') actions.addNote();
+    if (ev.target.id === 'note-edit-draft') actions.addNote();
     else if (ev.target.id && ev.target.id.startsWith('note-edit-')) actions.saveNote({dataset: {id: ev.target.id.replace('note-edit-', '')}});
     else if (ev.target.closest('form[data-form]')) ev.target.closest('form').requestSubmit();
   }
