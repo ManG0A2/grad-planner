@@ -946,12 +946,12 @@ function renderDetail() {
       </div>
     </div>`;
   } else if (tab === 'files') {
-    body = `<div class="page-head" style="margin-bottom:6px"><p class="muted small">링크(URL, 논문, 드라이브 경로)나 작은 파일(${MAX_FILE_MB}MB 이하)을 첨부할 수 있습니다.</p>
+    body = `<div class="page-head" style="margin-bottom:6px"><p class="muted small">링크(URL, 논문, 드라이브 경로)나 작은 파일(${MAX_FILE_MB}MB 이하)을 첨부할 수 있습니다. 파일 본문은 첨부한 기기에만 저장되고 다른 기기에는 이름만 동기화됩니다.</p>
       <div class="actions"><button class="btn sm" data-act="addLink">🔗 링크 추가</button><button class="btn sm" data-act="attachFile">📎 파일 첨부</button></div></div>
       ${item.attachments.length ? item.attachments.map(a => `<div class="att">
           <span class="ic">${a.kind === 'link' ? '🔗' : '📄'}</span>
-          <span class="name">${a.kind === 'link' ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.name)}</a>` : `<a href="#" data-act="downloadAtt" data-id="${a.id}">${esc(a.name)}</a>`}</span>
-          <span class="sub">${a.kind === 'link' ? esc((a.url || '').replace(/^https?:\/\//, '').slice(0, 40)) : fmtBytes(a.size || 0)}</span>
+          <span class="name">${a.kind === 'link' ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.name)}</a>` : a.data ? `<a href="#" data-act="downloadAtt" data-id="${a.id}">${esc(a.name)}</a>` : `<span class="muted" title="파일 본문은 첨부한 기기에만 저장됩니다">${esc(a.name)}</span>`}</span>
+          <span class="sub">${a.kind === 'link' ? esc((a.url || '').replace(/^https?:\/\//, '').slice(0, 40)) : fmtBytes(a.size || 0) + (a.data ? '' : ' · 다른 기기에 있음')}</span>
           <button class="icon-btn" data-act="deleteAtt" data-id="${a.id}" title="삭제">🗑️</button>
         </div>`).join('') : '<div class="empty">첨부된 항목이 없습니다.</div>'}`;
   } else {
@@ -1380,6 +1380,7 @@ const actions = {
   downloadAtt(el, ev) {
     ev.preventDefault();
     const a = findItem(ui.detail.type, ui.detail.id).attachments.find(x => x.id === el.dataset.id);
+    if (!a || !a.data) return alert('이 파일의 본문은 첨부한 기기에만 저장되어 있습니다.');
     const link = document.createElement('a'); link.href = a.data; link.download = a.name; link.click();
   },
   deleteAtt(el) {
@@ -1511,13 +1512,25 @@ async function pullRemote(cfg) {
   if (!content || !content.trim()) return null;
   try { const p = JSON.parse(content); return p && Array.isArray(p.events) ? p : null; } catch (e) { return null; }
 }
+const GIST_FILE_LIMIT = 1000000, KEEPALIVE_LIMIT = 60000;
+// 첨부 파일 본문(base64)은 Gist 파일당 1MB 제한에 걸리므로 동기화에서 제외 (이름·크기만 올림, 본문은 올린 기기에 남음)
+function stripForSync(data) {
+  const strip = list => (list || []).map(it => ({...it, attachments: (it.attachments || []).map(a => { const {data: _d, ...rest} = a; return rest; })}));
+  return {...data, courses: strip(data.courses), projects: strip(data.projects)};
+}
 async function pushRemote(cfg, data, keepalive = false) {
-  await gistRequest('PATCH', cfg, {files: {'data.json': {content: JSON.stringify(data)}}}, keepalive);
+  const content = JSON.stringify(stripForSync(data));
+  if (content.length > GIST_FILE_LIMIT) throw new Error(`데이터가 너무 큽니다 (${fmtBytes(content.length)} · Gist 한도 1MB)`);
+  await gistRequest('PATCH', cfg, {files: {'data.json': {content}}}, keepalive && content.length < KEEPALIVE_LIMIT);
 }
 const hasData = s => !!(s && ((s.courses || []).length || (s.projects || []).length || (s.events || []).length || (s.routines || []).length));
 function applyRemote(remote) {
   const s = defaultState();
-  state = {...s, ...remote, projects: remote.projects || [], routines: remote.routines || [], settings: {...s.settings, ...(remote.settings || {})}};
+  // 이 기기에 있는 첨부 파일 본문은 그대로 유지 (원격에는 본문이 없음)
+  const localData = {};
+  [...(state.courses || []), ...(state.projects || [])].forEach(it => (it.attachments || []).forEach(a => { if (a.data) localData[a.id] = a.data; }));
+  const restore = list => (list || []).map(it => ({...it, attachments: (it.attachments || []).map(a => (!a.data && localData[a.id]) ? {...a, data: localData[a.id]} : a)}));
+  state = {...s, ...remote, courses: restore(remote.courses), projects: restore(remote.projects), routines: remote.routines || [], settings: {...s.settings, ...(remote.settings || {})}};
   localStorage.setItem(KEY, JSON.stringify(state)); // save()를 거치지 않음 (updatedAt 유지, 재업로드 방지)
   ui.editingNote = null;
   render();
